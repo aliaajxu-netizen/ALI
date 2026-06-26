@@ -1,0 +1,6 @@
+{
+  "name": "منصة مدرسي — قواعد اللغة العربية",
+  "description": "منصة تفاعلية للتقييم الذاتي في قواعد اللغة العربية والأسئلة الوزارية حول الاستفهام التصديقي والتصوري للصف السادس الإعدادي.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
