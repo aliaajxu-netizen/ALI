@@ -1658,14 +1658,74 @@ body {
     width: 100%;
   }
   .quran-verse {
-    padding: 1.25rem 1.5rem;
+    padding: 1.25rem 1rem;
   }
   .poetry-verse {
-    padding: 1rem 1.25rem;
+    padding: 1rem 0.75rem;
+  }
+  
+  /* Modern Responsive Academic Slider for Mobile (prevent overlapping nodes) */
+  .academic-slider-container {
+    height: auto !important;
+    margin: 0.5rem 0 !important;
+  }
+  .academic-slider-track {
+    display: none !important; /* Hide the linear track background on mobile */
+  }
+  .academic-slider-steps {
+    position: static !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    pointer-events: auto !important;
+    width: 100% !important;
+  }
+  .step-node {
+    position: static !important;
+    transform: none !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    font-size: 0.95rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    border: 2px solid var(--color-border) !important;
+  }
+  .step-node:hover {
+    transform: scale(1.1) !important;
+    border-color: var(--color-primary) !important;
+  }
+  .step-node.selected {
+    transform: scale(1.15) !important;
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: var(--madrasati-white) !important;
+  }
+  .step-dot {
+    display: none !important;
+  }
+  
+  /* Stack academic milestones vertically on mobile for supreme legibility */
+  .academic-milestones {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+    direction: rtl !important; /* Proper Arabic text direction */
+    padding-top: 1rem !important;
+    border-top: 1px dashed var(--color-border) !important;
+  }
+  .milestone {
+    font-size: 0.8rem !important;
   }
 }
 
 @media (max-width: 480px) {
+  .container {
+    padding: 0.75rem 0.5rem;
+  }
   .navbar {
     padding: 0.6rem 0.75rem;
   }
@@ -1690,35 +1750,30 @@ body {
     width: 34px;
     height: 34px;
   }
+  
+  /* Responsive 2-Row Accordion Card Header to prevent clashing text & badges */
   .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
     padding: 0.75rem 1rem;
   }
+  .card-header-left {
+    width: 100%;
+    gap: 0.5rem;
+  }
+  .card-header-right {
+    margin-right: 0;
+    margin-left: auto;
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding-right: 2.25rem; /* Indent under the preview text nicely */
+  }
+  
   .card-body {
-    padding: 1rem;
-  }
-  .academic-slider-container {
-    margin: 0 0.75rem;
-  }
-  .step-node {
-    width: 24px;
-    height: 24px;
-    font-size: 0.75rem;
-  }
-  .academic-milestones {
-    font-size: 0.7rem;
-    gap: 0.25rem;
-  }
-  .mastery-summary-grid {
-    gap: 0.4rem;
-  }
-  .mastery-sum-card {
-    padding: 0.5rem 0.25rem;
-  }
-  .mastery-sum-count {
-    font-size: 1.15rem;
-  }
-  .mastery-sum-label {
-    font-size: 0.65rem;
+    padding: 1rem 0.75rem;
   }
   .submit-action-row {
     justify-content: center;
@@ -1756,6 +1811,29 @@ body {
   }
 }
 
+/* Vertical Stacking of Mastery Cards under 420px viewport to prevent squashed text */
+@media (max-width: 420px) {
+  .mastery-summary-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+  .mastery-sum-card {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0.75rem 1rem !important;
+    text-align: right !important;
+  }
+  .mastery-sum-count {
+    font-size: 1.3rem !important;
+    order: 2 !important;
+  }
+  .mastery-sum-label {
+    font-size: 0.85rem !important;
+    order: 1 !important;
+  }
+}
+
 @media (max-width: 360px) {
   .brand-name {
     font-size: 1rem;
@@ -1763,17 +1841,6 @@ body {
   .btn {
     font-size: 0.8rem;
     padding: 0.4rem 0.6rem;
-  }
-  .step-node {
-    width: 20px;
-    height: 20px;
-    font-size: 0.65rem;
-  }
-  .academic-milestones {
-    font-size: 0.6rem;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.4rem;
   }
   .home-title {
     font-size: 1.4rem;
