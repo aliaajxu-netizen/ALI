@@ -345,14 +345,31 @@ function renderPracticeScreen(container) {
   const answeredCount = QUESTIONS.filter(q => (state.answers[q.id] || "").trim().length > 0).length;
   const progressPercent = Math.round((answeredCount / totalQuestions) * 100);
 
+  const ratedCount = QUESTIONS.filter(q => state.ratings[q.id] !== undefined).length;
+  const ratedPercent = Math.round((ratedCount / totalQuestions) * 100);
+
   const practiceHTML = `
     <div class="practice-header">
-      <div class="progress-container">
-        <span class="progress-label">تقدمك في الحل: ${answeredCount} من ${totalQuestions} أسئلة</span>
-        <span class="progress-label" style="color: var(--color-primary);">${progressPercent}%</span>
+      <div class="progress-container" style="margin-bottom: 0.4rem;">
+        <span class="progress-label" style="font-size: 0.85rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 0.25rem;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--madrasati-medium-purple); display: inline-block;"></span>
+          أسئلة أجبت عليها: ${answeredCount} من ${totalQuestions}
+        </span>
+        <span class="progress-label" style="font-size: 0.85rem; color: var(--madrasati-medium-purple); font-weight: 600;">${progressPercent}%</span>
       </div>
-      <div class="progress-bar-outer">
-        <div class="progress-bar-inner" style="width: ${progressPercent}%;"></div>
+      <div class="progress-bar-outer" style="height: 6px; margin-bottom: 0.75rem;">
+        <div class="progress-bar-inner" style="width: ${progressPercent}%; background-color: var(--madrasati-medium-purple);"></div>
+      </div>
+
+      <div class="progress-container" style="margin-bottom: 0.4rem;">
+        <span class="progress-label" style="font-size: 0.9rem; color: var(--color-text-main); font-weight: 700; display: flex; align-items: center; gap: 0.25rem;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--color-primary); display: inline-block;"></span>
+          نسبة الأسئلة المقيمة: ${ratedCount} من ${totalQuestions}
+        </span>
+        <span class="progress-label" style="font-size: 0.9rem; color: var(--color-primary); font-weight: 700;">${ratedPercent}%</span>
+      </div>
+      <div class="progress-bar-outer" style="height: 8px; margin-bottom: 1.5rem;">
+        <div class="progress-bar-inner" style="width: ${ratedPercent}%; background-color: var(--color-primary);"></div>
       </div>
 
       <!-- Filter Bar -->
@@ -567,7 +584,7 @@ function setFocusedIndex(idx) {
   }, 50);
 }
 
-// Render the Accordion list of all questions
+// Render the Accordion list of all questions (modified to show exactly one question to prevent distraction)
 function renderAccordionCards() {
   const container = document.getElementById("accordion-container");
   if (!container) return;
@@ -585,280 +602,290 @@ function renderAccordionCards() {
     return;
   }
 
-  filtered.forEach((q) => {
-    const originalIdx = QUESTIONS.findIndex(item => item.id === q.id);
-    const originalNum = originalIdx + 1;
+  const filteredIdx = getFilteredIndex();
+  if (filteredIdx === -1) {
+    return;
+  }
 
-    const isExpanded = !!state.expandedCards[q.id];
-    const isAnswered = !!state.answers[q.id] && state.answers[q.id].trim().length > 0;
-    const isShown = !!state.shownAnswers[q.id];
-    const hasRating = state.ratings[q.id] !== undefined;
-    const masteryStatus = state.mastery[q.id];
+  const q = filtered[filteredIdx];
+  const originalIdx = QUESTIONS.findIndex(item => item.id === q.id);
+  const originalNum = originalIdx + 1;
 
-    // Build Status Badge text & CSS
-    let statusText = "لم تتم الإجابة";
-    let statusClass = "status-unanswered";
+  const isAnswered = !!state.answers[q.id] && state.answers[q.id].trim().length > 0;
+  const isShown = !!state.shownAnswers[q.id];
+  const hasRating = state.ratings[q.id] !== undefined;
+  const masteryStatus = state.mastery[q.id];
 
-    if (hasRating) {
-      statusText = "تم التقييم";
-      statusClass = "status-rated";
-    } else if (isShown) {
-      statusText = "تم عرض الجواب";
-      statusClass = "status-viewed";
-    } else if (isAnswered) {
-      statusText = "تمت الإجابة";
-      statusClass = "status-answered";
+  // Build Status Badge text & CSS
+  let statusText = "لم تتم الإجابة";
+  let statusClass = "status-unanswered";
+
+  if (hasRating) {
+    statusText = "تم التقييم";
+    statusClass = "status-rated";
+  } else if (isShown) {
+    statusText = "تم عرض الجواب";
+    statusClass = "status-viewed";
+  } else if (isAnswered) {
+    statusText = "تمت الإجابة";
+    statusClass = "status-answered";
+  }
+
+  // Mastery Badge on Header
+  let masteryBadgeHTML = "";
+  if (masteryStatus) {
+    let mText = "";
+    let mClass = "";
+    if (masteryStatus === "high") {
+      mText = "متمكن";
+      mClass = "mastery-high";
+    } else if (masteryStatus === "mid") {
+      mText = "يحتاج مراجعة";
+      mClass = "mastery-mid";
+    } else if (masteryStatus === "low") {
+      mText = "غير متمكن";
+      mClass = "mastery-low";
     }
+    masteryBadgeHTML = `<span class="mastery-badge ${mClass}">${mText}</span>`;
+  }
 
-    // Mastery Badge on Header
-    let masteryBadgeHTML = "";
-    if (masteryStatus) {
-      let mText = "";
-      let mClass = "";
-      if (masteryStatus === "high") {
-        mText = "متمكن";
-        mClass = "mastery-high";
-      } else if (masteryStatus === "mid") {
-        mText = "يحتاج مراجعة";
-        mClass = "mastery-mid";
-      } else if (masteryStatus === "low") {
-        mText = "غير متمكن";
-        mClass = "mastery-low";
-      }
-      masteryBadgeHTML = `<span class="mastery-badge ${mClass}">${mText}</span>`;
-    }
+  const card = document.createElement("div");
+  card.id = `card-${q.id}`;
+  card.className = `accordion-card active`;
 
-    const card = document.createElement("div");
-    card.id = `card-${q.id}`;
-    card.className = `accordion-card ${isExpanded ? 'active' : ''}`;
+  const questionSnippet = q.question.substring(0, 45).replace(/\n/g, " ") + (q.question.length > 45 ? "..." : "");
 
-    const questionSnippet = q.question.substring(0, 45).replace(/\n/g, " ") + (q.question.length > 45 ? "..." : "");
+  // Structured Quran and Poetry content rendering
+  let quranHTML = "";
+  if (q.quranVerse) {
+    quranHTML = `
+      <div class="quran-container">
+        <div class="quran-verse" dir="rtl" lang="ar">${q.quranVerse}</div>
+      </div>
+    `;
+  }
 
-    // Structured Quran and Poetry content rendering
-    let quranHTML = "";
-    if (q.quranVerse) {
-      quranHTML = `
-        <div class="quran-container">
-          <div class="quran-verse" dir="rtl" lang="ar">${q.quranVerse}</div>
+  let poetryHTML = "";
+  if (q.poetry) {
+    const poetIntro = "قال الشاعر:";
+    
+    let poetryCore = "";
+    if (q.poetry.layout === "two-halves") {
+      poetryCore = `
+        <div class="poetry-verse poetry-two-halves" dir="rtl" lang="ar">
+          <span class="poetry-hemistich poetry-sadr">${q.poetry.sadr}</span>
+          <span class="poetry-separator">—</span>
+          <span class="poetry-hemistich poetry-ajuz">${q.poetry.ajuz}</span>
+        </div>
+      `;
+    } else if (q.poetry.layout === "two-lines") {
+      poetryCore = `
+        <div class="poetry-verse" dir="rtl" lang="ar">
+          ${q.poetry.lines.map(line => `<div class="poetry-line">${line}</div>`).join('')}
         </div>
       `;
     }
-
-    let poetryHTML = "";
-    if (q.poetry) {
-      if (q.poetry.layout === "two-halves") {
-        poetryHTML = `
-          <div class="poetry-verse poetry-two-halves" dir="rtl" lang="ar">
-            <span class="poetry-hemistich poetry-sadr">${q.poetry.sadr}</span>
-            <span class="poetry-separator">—</span>
-            <span class="poetry-hemistich poetry-ajuz">${q.poetry.ajuz}</span>
-          </div>
-        `;
-      } else if (q.poetry.layout === "two-lines") {
-        poetryHTML = `
-          <div class="poetry-verse" dir="rtl" lang="ar">
-            ${q.poetry.lines.map(line => `<div class="poetry-line">${line}</div>`).join('')}
-          </div>
-        `;
-      }
-    }
-
-    // Accordion Card DOM layout
-    card.innerHTML = `
-      <div class="card-header" onclick="toggleCardCollapse('${q.id}', ${originalIdx})">
-        <div class="card-header-left">
-          <span class="question-num-badge">${originalNum}</span>
-          <span class="question-preview-text">${questionSnippet}</span>
-        </div>
-        <div class="card-header-right">
-          ${masteryBadgeHTML}
-          <span class="status-badge ${statusClass}">${statusText}</span>
-          <span class="collapse-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
-          </span>
-        </div>
-      </div>
-
-      <div class="card-body">
-        <div class="badges-row">
-          ${q.years ? `<span class="year-badge">${q.years}</span>` : ''}
-        </div>
-
-        ${quranHTML}
-        ${poetryHTML}
-
-        <h3 class="question-text">${q.question}</h3>
-
-        <div class="answer-input-container">
-          <label class="answer-label" for="textarea-${q.id}">إجابتك الشخصية يا بطل:</label>
-          <textarea 
-            class="answer-textarea" 
-            id="textarea-${q.id}" 
-            placeholder="اكتب هنا إجابتك النحوية الكاملة قبل عرض الإجابة النموذجية..."
-            ${isShown ? 'disabled' : ''}
-          >${state.answers[q.id] || ""}</textarea>
-        </div>
-
-        <div class="submit-action-row">
-          <button 
-            class="btn btn-primary" 
-            id="btn-show-${q.id}" 
-            onclick="revealModelAnswer('${q.id}')"
-            ${(!state.answers[q.id] || state.answers[q.id].trim().length === 0 || isShown) ? 'disabled' : ''}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"/><circle cx="12" cy="12" r="3"/></svg>
-            تمت الإجابة — أظهر الجواب النموذجي
-          </button>
-        </div>
-
-        <!-- Hidden Model Answer Section -->
-        <div class="model-answer-section" id="model-${q.id}" style="${isShown ? 'display:block;' : 'display:none;'}">
-          <h4 class="model-answer-title">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
-            الجواب النموذجي من المصدر:
-          </h4>
-          <p class="model-answer-text">${q.modelAnswer}</p>
-        </div>
-
-        <!-- Hidden Self-Assessment Section -->
-        <div class="evaluation-section" id="eval-${q.id}" style="${isShown ? 'display:block;' : 'display:none;'}">
-          <h4 class="eval-title">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-award"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-            ميزان التقييم الذاتي الأكاديمي (0 - 10 درجات)
-          </h4>
-          <p class="eval-subtitle">قارن إجابتك بالحل النموذجي أعلاه بدقة، ثم اختر الدرجة التي تستحقها على هذا التدريج الأكاديمي:</p>
-          
-          <div class="academic-slider-wrapper">
-            <div class="academic-badge-container">
-              <span class="academic-score-title">التقدير الأكاديمي:</span>
-              <div class="academic-score-badge" id="score-badge-${q.id}">
-                ${state.ratings[q.id] !== undefined ? `${state.ratings[q.id]} / 10 — ${getAcademicLabel(state.ratings[q.id])}` : 'يرجى اختيار درجة التقييم'}
-              </div>
-            </div>
-
-            <div class="academic-slider-container">
-              <!-- Active progress fill line -->
-              <div class="academic-slider-track">
-                <div class="academic-slider-fill" id="slider-fill-${q.id}" style="width: ${state.ratings[q.id] !== undefined ? (state.ratings[q.id] * 10) : 0}%;"></div>
-              </div>
-
-              <!-- Clickable step nodes 0 to 10 -->
-              <div class="academic-slider-steps">
-                ${Array.from({length: 11}).map((_, i) => {
-                  const isSelected = state.ratings[q.id] === i;
-                  // Left position is percentage from 0 to 100
-                  const leftPos = i * 10;
-                  return `
-                    <button 
-                      class="step-node ${isSelected ? 'selected' : ''}" 
-                      style="left: ${leftPos}%;" 
-                      onclick="rateQuestion('${q.id}', ${i})"
-                      title="تقييم بـ ${i} درجات"
-                    >
-                      <span class="step-dot"></span>
-                      <span class="step-number">${i}</span>
-                    </button>
-                  `;
-                }).join('')}
-              </div>
-            </div>
-
-            <!-- Descriptive milestones -->
-            <div class="academic-milestones">
-              <span class="milestone milestone-low">تأسيس وتركيز مكثف (0-2)</span>
-              <span class="milestone milestone-mid">مقبول إلى جيد (3-6)</span>
-              <span class="milestone milestone-high">ممتاز ومتمكن (7-10)</span>
-            </div>
-          </div>
-
-          <!-- Mastery Section -->
-          <div class="mastery-section">
-            <h4 class="mastery-title">تصنيف مستوى تمكنك من مهارة السؤال:</h4>
-            <div class="mastery-buttons">
-              <button 
-                class="btn-mastery ${state.mastery[q.id] === 'high' ? 'selected-high' : ''}" 
-                onclick="setMasteryStatus('${q.id}', 'high')"
-              >
-                متمكن من السؤال
-              </button>
-              <button 
-                class="btn-mastery ${state.mastery[q.id] === 'mid' ? 'selected-mid' : ''}" 
-                onclick="setMasteryStatus('${q.id}', 'mid')"
-              >
-                أحتاج إلى مراجعة الموضوع
-              </button>
-              <button 
-                class="btn-mastery ${state.mastery[q.id] === 'low' ? 'selected-low' : ''}" 
-                onclick="setMasteryStatus('${q.id}', 'low')"
-              >
-                غير متمكن
-              </button>
-            </div>
-          </div>
-
-        </div>
+    
+    poetryHTML = `
+      <div class="poetry-wrapper" style="margin-bottom: 1.25rem;">
+        <div class="poetry-intro-text" style="font-family: 'Cairo', sans-serif; font-size: 0.95rem; font-weight: 600; color: var(--color-text-muted); margin-bottom: 0.5rem; text-align: right;">${poetIntro}</div>
+        ${poetryCore}
       </div>
     `;
+  }
 
-    container.appendChild(card);
+  // Accordion Card DOM layout
+  card.innerHTML = `
+    <div class="card-header" style="cursor: default;">
+      <div class="card-header-left">
+        <span class="question-num-badge">${originalNum}</span>
+        <span class="question-preview-text">${questionSnippet}</span>
+      </div>
+      <div class="card-header-right">
+        ${masteryBadgeHTML}
+        <span class="status-badge ${statusClass}">${statusText}</span>
+      </div>
+    </div>
 
-    // Setup Textarea typing event listener
-    const textarea = card.querySelector(`.answer-textarea`);
-    const btnShow = card.querySelector(`#btn-show-${q.id}`);
+    <div class="card-body" style="display: block;">
+      <div class="badges-row">
+        ${q.years ? `<span class="year-badge">${q.years}</span>` : ''}
+      </div>
 
-    if (textarea && btnShow) {
-      textarea.addEventListener("input", (e) => {
-        const val = e.target.value;
-        state.answers[q.id] = val;
-        saveState();
+      ${quranHTML}
+      ${poetryHTML}
 
-        const hasText = val.trim().length > 0;
+      <h3 class="question-text">${q.question}</h3>
 
-        // Dynamic update of top nav dot
-        const dot = document.querySelector(`.nav-dot[data-q-id="${q.id}"]`);
-        if (dot) {
-          if (hasText) {
-            dot.classList.add("answered");
-          } else {
-            dot.classList.remove("answered");
-          }
-        }
+      <div class="answer-input-container">
+        <label class="answer-label" for="textarea-${q.id}">إجابتك الشخصية يا بطل:</label>
+        <textarea 
+          class="answer-textarea" 
+          id="textarea-${q.id}" 
+          placeholder="اكتب هنا إجابتك النحوية الكاملة قبل عرض الإجابة النموذجية..."
+          ${isShown ? 'disabled' : ''}
+        >${state.answers[q.id] || ""}</textarea>
+      </div>
 
-        // Dynamic update of bottom pagination button
-        const pBtn = document.querySelector(`.pagination-item-btn[data-q-id="${q.id}"]`);
-        if (pBtn) {
-          if (hasText) {
-            pBtn.classList.add("answered");
-            pBtn.classList.remove("unanswered");
-            if (!pBtn.querySelector(".check-icon") && !pBtn.querySelector(".answered-badge")) {
-              const dotIcon = pBtn.querySelector(".unanswered-badge");
-              if (dotIcon) {
-                dotIcon.outerHTML = `
-                  <span class="status-indicator-badge answered-badge">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
-                  </span>
+      <div class="submit-action-row">
+        <button 
+          class="btn btn-primary" 
+          id="btn-show-${q.id}" 
+          onclick="revealModelAnswer('${q.id}')"
+          ${(!state.answers[q.id] || state.answers[q.id].trim().length === 0 || isShown) ? 'disabled' : ''}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"/><circle cx="12" cy="12" r="3"/></svg>
+          تمت الإجابة — أظهر الجواب النموذجي
+        </button>
+      </div>
+
+      <!-- Hidden Model Answer Section -->
+      <div class="model-answer-section" id="model-${q.id}" style="${isShown ? 'display:block;' : 'display:none;'}">
+        <h4 class="model-answer-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          الجواب النموذجي من المصدر:
+        </h4>
+        <p class="model-answer-text">${q.modelAnswer}</p>
+      </div>
+
+      <!-- Hidden Self-Assessment Section -->
+      <div class="evaluation-section" id="eval-${q.id}" style="${isShown ? 'display:block;' : 'display:none;'}">
+        <h4 class="eval-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-award"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+          ميزان التقييم الذاتي الأكاديمي (0 - 10 درجات)
+        </h4>
+        <p class="eval-subtitle">قارن إجابتك بالحل النموذجي أعلاه بدقة، ثم اختر الدرجة التي تستحقها على هذا التدريج الأكاديمي:</p>
+        
+        <div class="academic-slider-wrapper">
+          <div class="academic-badge-container">
+            <span class="academic-score-title">التقدير الأكاديمي:</span>
+            <div class="academic-score-badge" id="score-badge-${q.id}">
+              ${state.ratings[q.id] !== undefined ? `${state.ratings[q.id]} / 10 — ${getAcademicLabel(state.ratings[q.id])}` : 'يرجى اختيار درجة التقييم'}
+            </div>
+          </div>
+
+          <div class="academic-slider-container">
+            <!-- Active progress fill line -->
+            <div class="academic-slider-track">
+              <div class="academic-slider-fill" id="slider-fill-${q.id}" style="width: ${state.ratings[q.id] !== undefined ? (state.ratings[q.id] * 10) : 0}%;"></div>
+            </div>
+
+            <!-- Clickable step nodes 0 to 10 -->
+            <div class="academic-slider-steps">
+              ${Array.from({length: 11}).map((_, i) => {
+                const isSelected = state.ratings[q.id] === i;
+                // Left position is percentage from 0 to 100
+                const leftPos = i * 10;
+                return `
+                  <button 
+                    class="step-node ${isSelected ? 'selected' : ''}" 
+                    style="left: ${leftPos}%;" 
+                    onclick="rateQuestion('${q.id}', ${i})"
+                    title="تقييم بـ ${i} درجات"
+                  >
+                    <span class="step-dot"></span>
+                    <span class="step-number">${i}</span>
+                  </button>
                 `;
-              }
-            }
-          } else {
-            pBtn.classList.remove("answered");
-            pBtn.classList.add("unanswered");
-            const checkIcon = pBtn.querySelector(".answered-badge");
-            if (checkIcon) {
-              checkIcon.outerHTML = `<span class="status-indicator-badge unanswered-badge"></span>`;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Descriptive milestones -->
+          <div class="academic-milestones">
+            <span class="milestone milestone-low">تأسيس وتركيز مكثف (0-2)</span>
+            <span class="milestone milestone-mid">مقبول إلى جيد (3-6)</span>
+            <span class="milestone milestone-high">ممتاز ومتمكن (7-10)</span>
+          </div>
+        </div>
+
+        <!-- Mastery Section -->
+        <div class="mastery-section">
+          <h4 class="mastery-title">تصنيف مستوى تمكنك من مهارة السؤال:</h4>
+          <div class="mastery-buttons">
+            <button 
+              class="btn-mastery ${state.mastery[q.id] === 'high' ? 'selected-high' : ''}" 
+              onclick="setMasteryStatus('${q.id}', 'high')"
+            >
+              متمكن من السؤال
+            </button>
+            <button 
+              class="btn-mastery ${state.mastery[q.id] === 'mid' ? 'selected-mid' : ''}" 
+              onclick="setMasteryStatus('${q.id}', 'mid')"
+            >
+              أحتاج إلى مراجعة الموضوع
+            </button>
+            <button 
+              class="btn-mastery ${state.mastery[q.id] === 'low' ? 'selected-low' : ''}" 
+              onclick="setMasteryStatus('${q.id}', 'low')"
+            >
+              غير متمكن
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  container.appendChild(card);
+
+  // Setup Textarea typing event listener
+  const textarea = card.querySelector(`.answer-textarea`);
+  const btnShow = card.querySelector(`#btn-show-${q.id}`);
+
+  if (textarea && btnShow) {
+    textarea.addEventListener("input", (e) => {
+      const val = e.target.value;
+      state.answers[q.id] = val;
+      saveState();
+
+      const hasText = val.trim().length > 0;
+
+      // Dynamic update of top nav dot
+      const dot = document.querySelector(`.nav-dot[data-q-id="${q.id}"]`);
+      if (dot) {
+        if (hasText) {
+          dot.classList.add("answered");
+        } else {
+          dot.classList.remove("answered");
+        }
+      }
+
+      // Dynamic update of bottom pagination button
+      const pBtn = document.querySelector(`.pagination-item-btn[data-q-id="${q.id}"]`);
+      if (pBtn) {
+        if (hasText) {
+          pBtn.classList.add("answered");
+          pBtn.classList.remove("unanswered");
+          if (!pBtn.querySelector(".check-icon") && !pBtn.querySelector(".answered-badge")) {
+            const dotIcon = pBtn.querySelector(".unanswered-badge");
+            if (dotIcon) {
+              dotIcon.outerHTML = `
+                <span class="status-indicator-badge answered-badge">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+              `;
             }
           }
-        }
-
-        // Enable or disable show model answer button
-        if (hasText && !state.shownAnswers[q.id]) {
-          btnShow.disabled = false;
         } else {
-          btnShow.disabled = true;
+          pBtn.classList.remove("answered");
+          pBtn.classList.add("unanswered");
+          const checkIcon = pBtn.querySelector(".answered-badge");
+          if (checkIcon) {
+            checkIcon.outerHTML = `<span class="status-indicator-badge unanswered-badge"></span>`;
+          }
         }
-      });
-    }
-  });
+      }
+
+      // Enable or disable show model answer button
+      if (hasText && !state.shownAnswers[q.id]) {
+        btnShow.disabled = false;
+      } else {
+        btnShow.disabled = true;
+      }
+    });
+  }
 }
 
 // Collapses / Expands Accordion cards manually
@@ -1182,6 +1209,10 @@ function renderResultsScreen(container) {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
           العودة لتعديل التقييمات
         </button>
+        <button class="btn btn-secondary" id="btn-export-summary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          تصدير الملخص
+        </button>
         <button class="btn btn-secondary" id="btn-results-reset">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
           بدء محاولة جديدة تماماً
@@ -1194,15 +1225,112 @@ function renderResultsScreen(container) {
 
   // Event handlers
   const btnReturn = document.getElementById("btn-return-practice");
+  const btnExport = document.getElementById("btn-export-summary");
   const btnReset = document.getElementById("btn-results-reset");
 
   if (btnReturn) {
     btnReturn.addEventListener("click", () => navigateTo("practice"));
   }
 
+  if (btnExport) {
+    btnExport.addEventListener("click", () => exportSummaryText());
+  }
+
   if (btnReset) {
     btnReset.addEventListener("click", () => promptReset());
   }
+}
+
+// Function to export performance summary as a text file
+function exportSummaryText() {
+  const totalQuestions = QUESTIONS.length;
+  const answeredCount = QUESTIONS.filter(q => (state.answers[q.id] || "").trim().length > 0).length;
+  const shownCount = QUESTIONS.filter(q => state.shownAnswers[q.id]).length;
+  const ratedCount = QUESTIONS.filter(q => state.ratings[q.id] !== undefined).length;
+  
+  let totalScore = 0;
+  QUESTIONS.forEach(q => {
+    if (state.ratings[q.id] !== undefined) {
+      totalScore += state.ratings[q.id];
+    }
+  });
+
+  const maxScore = totalQuestions * 10;
+  const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+
+  let masteryHigh = 0;
+  let masteryMid = 0;
+  let masteryLow = 0;
+  QUESTIONS.forEach(q => {
+    const m = state.mastery[q.id];
+    if (m === "high") masteryHigh++;
+    else if (m === "mid") masteryMid++;
+    else if (m === "low") masteryLow++;
+  });
+
+  let text = `=========================================
+ملخص الأداء الأكاديمي - تطبيق مدرستي (اللغة العربية)
+=========================================
+التاريخ: ${new Date().toLocaleString('ar-EG', { hour12: true })}
+
+إحصائيات عامة:
+------------------
+* الدرجة الكلية: ${totalScore} من أصل ${maxScore}
+* النسبة المئوية للتقييم الذاتي: ${percentage}%
+* عدد الأسئلة الكلي: ${totalQuestions}
+* الأسئلة المجاب عنها: ${answeredCount}
+* الإجابات النموذجية المعروضة: ${shownCount}
+* الأسئلة المقيمة: ${ratedCount}
+
+ملخص مستوى التمكن:
+------------------
+* متمكن من السؤال: ${masteryHigh}
+* يحتاج إلى مراجعة الموضوع: ${masteryMid}
+* غير متمكن: ${masteryLow}
+
+تفاصيل الأسئلة والإجابات:
+=========================\n`;
+
+  QUESTIONS.forEach((q, idx) => {
+    const rating = state.ratings[q.id];
+    const masteryStatus = state.mastery[q.id];
+
+    let ratingStr = "لم يتم التقييم";
+    if (rating !== undefined) {
+      ratingStr = `${rating} / 10 (${getAcademicLabel(rating)})`;
+    }
+
+    let masteryStr = "لم يتم التحديد";
+    if (masteryStatus === "high") masteryStr = "متمكن";
+    else if (masteryStatus === "mid") masteryStr = "أحتاج مراجعة";
+    else if (masteryStatus === "low") masteryStr = "غير متمكن";
+
+    const userAnswer = state.answers[q.id] || "لا توجد إجابة";
+
+    text += `\nالسؤال ${idx + 1}: ${q.question.replace(/\n/g, " ")}
+---------------------------------------------
+* التقييم الأكاديمي: ${ratingStr}
+* مستوى التمكن: ${masteryStr}
+* إجابتك:
+${userAnswer}
+---------------------------------------------
+`;
+  });
+
+  text += `\n=========================================
+تم التصدير بنجاح من تطبيق مدرستي. بالتوفيق والنجاح الدائم!
+=========================================`;
+
+  // Create downloadable file
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `madrasati-summary-${new Date().toISOString().slice(0,10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // Result list click to jump to specific question index
