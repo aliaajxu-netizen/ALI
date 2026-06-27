@@ -517,3 +517,5 @@ const QUESTIONS = [
     modelAnswer: "ج/ أم المعادلة (متصلة)."
   }
 ];
+
+window.QUESTIONS = QUESTIONS;

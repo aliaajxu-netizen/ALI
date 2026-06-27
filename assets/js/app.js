@@ -5,6 +5,8 @@
 
 const STORAGE_KEY = "madrasati-arabic-unit-one-lesson-one-v1";
 
+const QUESTIONS = window.QUESTIONS;
+
 // Initial state structure
 let state = {
   currentScreen: "home", // "home", "practice", "results"
@@ -198,7 +200,7 @@ function renderHomeScreen(container) {
   const homeHTML = `
     <div class="home-screen" id="home-screen">
       <div class="home-logo-container">
-        <img class="home-logo" src="./assets/images/madrasati-logo.png" alt="منصة مدرسي" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22 viewBox=%220%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%235B2596%22/><text x=%2250%25%22 y=%2255%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-size=%2224%22 font-weight=%22bold%22>مدرسي</text></svg>'">
+        <img class="home-logo" src="/brand/madrasati-logo.png" alt="منصة مدرسي" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22 viewBox=%220%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%235B2596%22/><text x=%2250%25%22 y=%2255%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-size=%2224%22 font-weight=%22bold%22>مدرسي</text></svg>'">
       </div>
       <h1 class="home-title">منصة مدرسي</h1>
       <p class="home-subtitle">الأسئلة الوزارية حول الاستفهام التصديقي والتصوري لقواعد اللغة العربية للصف السادس الإعدادي</p>
@@ -1208,3 +1210,26 @@ window.jumpToQuestion = function(idx) {
   navigateTo("practice");
   setFocusedIndex(idx);
 };
+
+// Bind remaining modular functions to window scope for inline HTML handlers
+window.navigateTo = navigateTo;
+window.getAcademicLabel = getAcademicLabel;
+window.loadState = loadState;
+window.saveState = saveState;
+window.setupGlobalEvents = setupGlobalEvents;
+window.applyTheme = applyTheme;
+window.toggleTheme = toggleTheme;
+window.performReset = performReset;
+window.promptReset = promptReset;
+window.renderApp = renderApp;
+window.renderHomeScreen = renderHomeScreen;
+window.getFilteredQuestions = getFilteredQuestions;
+window.getFilteredIndex = getFilteredIndex;
+window.ensureValidFilterSelection = ensureValidFilterSelection;
+window.renderPracticeScreen = renderPracticeScreen;
+window.renderNavigationRail = renderNavigationRail;
+window.renderBottomPagination = renderBottomPagination;
+window.setFocusedIndex = setFocusedIndex;
+window.renderAccordionCards = renderAccordionCards;
+window.renderPracticeScreenProgressOnly = renderPracticeScreenProgressOnly;
+window.renderResultsScreen = renderResultsScreen;
