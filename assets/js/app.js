@@ -1385,10 +1385,6 @@ function renderResultsScreen(container) {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
           العودة لتعديل التقييمات
         </button>
-        <button class="btn btn-secondary" id="btn-export-summary">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          تصدير الملخص
-        </button>
         <button class="btn btn-secondary" id="btn-results-reset">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
           بدء محاولة جديدة تماماً
@@ -1401,128 +1397,15 @@ function renderResultsScreen(container) {
 
   // Event handlers
   const btnReturn = document.getElementById("btn-return-practice");
-  const btnExport = document.getElementById("btn-export-summary");
   const btnReset = document.getElementById("btn-results-reset");
 
   if (btnReturn) {
     btnReturn.addEventListener("click", () => navigateTo("practice"));
   }
 
-  if (btnExport) {
-    btnExport.addEventListener("click", () => exportSummaryText());
-  }
-
   if (btnReset) {
     btnReset.addEventListener("click", () => promptReset());
   }
-}
-
-// Function to export performance summary as a text file
-function exportSummaryText() {
-  const totalQuestions = QUESTIONS.length;
-  const answeredCount = QUESTIONS.filter(q => (state.answers[q.id] || "").trim().length > 0).length;
-  const shownCount = QUESTIONS.filter(q => state.shownAnswers[q.id]).length;
-  const ratedCount = QUESTIONS.filter(q => state.ratings[q.id] !== undefined).length;
-  
-  let totalScore = 0;
-  QUESTIONS.forEach(q => {
-    if (state.ratings[q.id] !== undefined) {
-      totalScore += state.ratings[q.id];
-    }
-  });
-
-  const maxScore = totalQuestions * 10;
-  const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
-
-  let masteryHigh = 0;
-  let masteryMid = 0;
-  let masteryLow = 0;
-  QUESTIONS.forEach(q => {
-    const m = state.mastery[q.id];
-    if (m === "high") masteryHigh++;
-    else if (m === "mid") masteryMid++;
-    else if (m === "low") masteryLow++;
-  });
-
-  // Calculate earned badge for text export
-  let earnedBadgeStr = "أكمل جميع الأسئلة لتفتح وسام التمكن والتميز!";
-  if (answeredCount === totalQuestions) {
-    if (percentage >= 90) {
-      earnedBadgeStr = "🥇 وسام التميز الأكاديمي الذهبي (تم الحصول عليه!)";
-    } else if (percentage >= 70) {
-      earnedBadgeStr = "🥈 وسام الإبداع اللغوي الفضي (تم الحصول عليه!)";
-    } else {
-      earnedBadgeStr = "🥉 وسام المثابرة والاجتهاد البرونزي (تم الحصول عليه!)";
-    }
-  }
-
-  let text = `=========================================
-ملخص الأداء الأكاديمي - تطبيق مدرستي (اللغة العربية)
-=========================================
-التاريخ: ${new Date().toLocaleString('ar-EG', { hour12: true })}
-
-وسام التميز:
-------------------
-* ${earnedBadgeStr}
-
-إحصائيات عامة:
-------------------
-* الدرجة الكلية: ${totalScore} من أصل ${maxScore}
-* النسبة المئوية للتقييم الذاتي: ${percentage}%
-* عدد الأسئلة الكلي: ${totalQuestions}
-* الأسئلة المجاب عنها: ${answeredCount}
-* الإجابات النموذجية المعروضة: ${shownCount}
-* الأسئلة المقيمة: ${ratedCount}
-
-ملخص مستوى التمكن:
-------------------
-* متمكن من السؤال: ${masteryHigh}
-* يحتاج إلى مراجعة الموضوع: ${masteryMid}
-* غير متمكن: ${masteryLow}
-
-تفاصيل الأسئلة والإجابات:
-=========================\n`;
-
-  QUESTIONS.forEach((q, idx) => {
-    const rating = state.ratings[q.id];
-    const masteryStatus = state.mastery[q.id];
-
-    let ratingStr = "لم يتم التقييم";
-    if (rating !== undefined) {
-      ratingStr = `${rating} / 10 (${getAcademicLabel(rating)})`;
-    }
-
-    let masteryStr = "لم يتم التحديد";
-    if (masteryStatus === "high") masteryStr = "متمكن";
-    else if (masteryStatus === "mid") masteryStr = "أحتاج مراجعة";
-    else if (masteryStatus === "low") masteryStr = "غير متمكن";
-
-    const userAnswer = state.answers[q.id] || "لا توجد إجابة";
-
-    text += `\nالسؤال ${idx + 1}: ${q.question.replace(/\n/g, " ")}
----------------------------------------------
-* التقييم الأكاديمي: ${ratingStr}
-* مستوى التمكن: ${masteryStr}
-* إجابتك:
-${userAnswer}
----------------------------------------------
-`;
-  });
-
-  text += `\n=========================================
-تم التصدير بنجاح من تطبيق مدرستي. بالتوفيق والنجاح الدائم!
-=========================================`;
-
-  // Create downloadable file
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `madrasati-summary-${new Date().toISOString().slice(0,10)}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
 
 // Result list click to jump to specific question index
