@@ -14,8 +14,23 @@ let state = {
   ratings: {},
   mastery: {},
   expandedCards: { "q-01": true }, // Question 1 open by default
-  theme: "light"
+  theme: "light",
+  filter: "all"
 };
+
+// Academic label generator based on self-evaluation score
+function getAcademicLabel(score) {
+  if (score === undefined || score === null) return "غير مقيّم";
+  const num = parseInt(score);
+  if (isNaN(num)) return "غير مقيّم";
+  if (num === 0) return "بحاجة لتركيز أكبر وتأسيس كامل ❌";
+  if (num <= 2) return "تحتاج جهد إضافي ومراجعة دقيقة ⚠️";
+  if (num <= 4) return "مقبول — تحتاج سد بعض الثغرات 👍";
+  if (num <= 6) return "جيد — أداء مرضي ومتماسك ✨";
+  if (num <= 8) return "جيد جداً — اقتربت من الإتقان الكامل 🌟";
+  if (num <= 9) return "ممتاز — فهم عميق ومتميز 🏆";
+  return "أداء عبقري ودرجة كاملة! 👑";
+}
 
 // Load saved state from localStorage
 function loadState() {
@@ -128,6 +143,7 @@ function performReset() {
   state.ratings = {};
   state.mastery = {};
   state.currentIndex = 0;
+  state.filter = "all";
   // Set question 1 open by default
   state.expandedCards = { "q-01": true };
   saveState();
@@ -254,10 +270,74 @@ function renderHomeScreen(container) {
   }
 }
 
+// Filter helper functions
+function getFilteredQuestions() {
+  const currentFilter = state.filter || "all";
+  return QUESTIONS.filter(q => {
+    const isAnswered = !!state.answers[q.id] && state.answers[q.id].trim().length > 0;
+    const hasRating = state.ratings[q.id] !== undefined;
+    const masteryStatus = state.mastery[q.id];
+
+    if (currentFilter === "unanswered") {
+      return !isAnswered;
+    }
+    if (currentFilter === "unrated") {
+      return !hasRating;
+    }
+    if (currentFilter === "needs_review") {
+      return masteryStatus === "mid";
+    }
+    if (currentFilter === "not_mastered") {
+      return masteryStatus === "low";
+    }
+    if (currentFilter === "mastered") {
+      return masteryStatus === "high";
+    }
+    return true; // "all"
+  });
+}
+
+function getFilteredIndex() {
+  const filtered = getFilteredQuestions();
+  const currentQ = QUESTIONS[state.currentIndex];
+  if (!currentQ) return -1;
+  return filtered.findIndex(q => q.id === currentQ.id);
+}
+
+function ensureValidFilterSelection() {
+  const filtered = getFilteredQuestions();
+  if (filtered.length === 0) return;
+  const idx = getFilteredIndex();
+  if (idx === -1) {
+    // Current question is not in the filtered list, set current index to the first filtered question
+    const targetQ = filtered[0];
+    const origIndex = QUESTIONS.findIndex(q => q.id === targetQ.id);
+    if (origIndex !== -1) {
+      state.currentIndex = origIndex;
+      // Expand this card
+      state.expandedCards = {};
+      state.expandedCards[targetQ.id] = true;
+      saveState();
+    }
+  }
+}
+
+window.setFilter = function(newFilter) {
+  state.filter = newFilter;
+  ensureValidFilterSelection();
+  saveState();
+  renderApp();
+};
+
 // 2. Practice Screen Layout
 function renderPracticeScreen(container) {
   const totalQuestions = QUESTIONS.length;
-  const currentQ = QUESTIONS[state.currentIndex];
+  
+  // Make sure we have a valid selection for the current filter
+  ensureValidFilterSelection();
+  
+  const filtered = getFilteredQuestions();
+  const filteredIdx = getFilteredIndex();
   
   // Calculate general progress
   const answeredCount = QUESTIONS.filter(q => (state.answers[q.id] || "").trim().length > 0).length;
@@ -272,12 +352,44 @@ function renderPracticeScreen(container) {
       <div class="progress-bar-outer">
         <div class="progress-bar-inner" style="width: ${progressPercent}%;"></div>
       </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <span class="filter-label">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          تصفية الأسئلة:
+        </span>
+        <div class="filter-options">
+          <button class="filter-btn ${state.filter === 'all' ? 'active' : ''}" onclick="setFilter('all')">الكل</button>
+          <button class="filter-btn ${state.filter === 'unanswered' ? 'active' : ''}" onclick="setFilter('unanswered')">غير المحلولة</button>
+          <button class="filter-btn ${state.filter === 'unrated' ? 'active' : ''}" onclick="setFilter('unrated')">لم يتم التقييم</button>
+          <button class="filter-btn ${state.filter === 'needs_review' ? 'active' : ''}" onclick="setFilter('needs_review')">تحتاج مراجعة</button>
+          <button class="filter-btn ${state.filter === 'not_mastered' ? 'active' : ''}" onclick="setFilter('not_mastered')">غير متمكن</button>
+          <button class="filter-btn ${state.filter === 'mastered' ? 'active' : ''}" onclick="setFilter('mastered')">متمكن</button>
+        </div>
+      </div>
       
-      <!-- Horizontal navigation rail of all questions -->
+      <!-- Horizontal navigation rail of filtered questions -->
       <div class="question-navigator" id="nav-rail"></div>
     </div>
 
     <div class="questions-list" id="accordion-container"></div>
+
+    <!-- Bottom Pagination Quick Navigation -->
+    <div class="bottom-pagination-container">
+      <div class="pagination-header">
+        <span class="pagination-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+          الوصول السريع للأسئلة:
+        </span>
+        <div class="pagination-legend">
+          <span class="legend-item"><span class="legend-dot unanswered"></span>غير مُجاب</span>
+          <span class="legend-item"><span class="legend-dot answered"></span>مُجاب</span>
+          <span class="legend-item"><span class="legend-dot active"></span>السؤال الحالي</span>
+        </div>
+      </div>
+      <div class="pagination-list" id="bottom-pagination-list"></div>
+    </div>
 
     <div class="bottom-nav">
       <button class="btn btn-secondary" id="btn-prev-q">
@@ -301,6 +413,9 @@ function renderPracticeScreen(container) {
   // Render the horizontal navigation dots/cards
   renderNavigationRail();
 
+  // Render the bottom pagination panel
+  renderBottomPagination();
+
   // Render the single accordion cards
   renderAccordionCards();
 
@@ -310,19 +425,27 @@ function renderPracticeScreen(container) {
   const btnFinish = document.getElementById("btn-finish-practice");
 
   if (btnPrev) {
-    btnPrev.disabled = state.currentIndex === 0;
+    btnPrev.disabled = filtered.length === 0 || filteredIdx <= 0;
     btnPrev.addEventListener("click", () => {
-      if (state.currentIndex > 0) {
-        setFocusedIndex(state.currentIndex - 1);
+      if (filteredIdx > 0) {
+        const targetQ = filtered[filteredIdx - 1];
+        const origIndex = QUESTIONS.findIndex(q => q.id === targetQ.id);
+        if (origIndex !== -1) {
+          setFocusedIndex(origIndex);
+        }
       }
     });
   }
 
   if (btnNext) {
-    btnNext.disabled = state.currentIndex === totalQuestions - 1;
+    btnNext.disabled = filtered.length === 0 || filteredIdx === -1 || filteredIdx >= filtered.length - 1;
     btnNext.addEventListener("click", () => {
-      if (state.currentIndex < totalQuestions - 1) {
-        setFocusedIndex(state.currentIndex + 1);
+      if (filteredIdx < filtered.length - 1) {
+        const targetQ = filtered[filteredIdx + 1];
+        const origIndex = QUESTIONS.findIndex(q => q.id === targetQ.id);
+        if (origIndex !== -1) {
+          setFocusedIndex(origIndex);
+        }
       }
     });
   }
@@ -339,14 +462,23 @@ function renderNavigationRail() {
   const rail = document.getElementById("nav-rail");
   if (!rail) return;
 
-  QUESTIONS.forEach((q, idx) => {
+  const filtered = getFilteredQuestions();
+
+  filtered.forEach((q, idx) => {
     const dot = document.createElement("div");
-    dot.className = `nav-dot ${state.currentIndex === idx ? 'active' : ''} ${state.answers[q.id] ? 'answered' : ''}`;
-    dot.textContent = idx + 1;
-    dot.title = `سؤال ${idx + 1}`;
+    const originalNum = QUESTIONS.findIndex(item => item.id === q.id) + 1;
+    const isDotActive = state.currentIndex === QUESTIONS.findIndex(item => item.id === q.id);
+
+    dot.className = `nav-dot ${isDotActive ? 'active' : ''} ${state.answers[q.id] ? 'answered' : ''}`;
+    dot.dataset.qId = q.id;
+    dot.textContent = originalNum;
+    dot.title = `سؤال ${originalNum}`;
     
     dot.addEventListener("click", () => {
-      setFocusedIndex(idx);
+      const origIndex = QUESTIONS.findIndex(item => item.id === q.id);
+      if (origIndex !== -1) {
+        setFocusedIndex(origIndex);
+      }
     });
 
     rail.appendChild(dot);
@@ -356,6 +488,57 @@ function renderNavigationRail() {
   const activeDot = rail.querySelector(".nav-dot.active");
   if (activeDot) {
     activeDot.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }
+}
+
+// Render the bottom pagination panel containing status-informed fast-jump buttons
+function renderBottomPagination() {
+  const list = document.getElementById("bottom-pagination-list");
+  if (!list) return;
+
+  list.innerHTML = ""; // Clear existing
+
+  const filtered = getFilteredQuestions();
+
+  filtered.forEach((q) => {
+    const originalIdx = QUESTIONS.findIndex(item => item.id === q.id);
+    const originalNum = originalIdx + 1;
+    const isCurrent = state.currentIndex === originalIdx;
+    const isAnswered = !!state.answers[q.id] && state.answers[q.id].trim().length > 0;
+
+    const btn = document.createElement("button");
+    btn.className = `pagination-item-btn ${isCurrent ? 'active' : ''} ${isAnswered ? 'answered' : 'unanswered'}`;
+    btn.dataset.qId = q.id;
+    
+    // Create inner structure: number and custom checkmark indicator if answered
+    let indicatorHTML = "";
+    if (isAnswered) {
+      indicatorHTML = `
+        <span class="status-indicator-badge answered-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+      `;
+    } else {
+      indicatorHTML = `<span class="status-indicator-badge unanswered-badge"></span>`;
+    }
+
+    btn.innerHTML = `
+      <span class="btn-num">${originalNum}</span>
+      ${indicatorHTML}
+    `;
+    btn.title = `سؤال ${originalNum}: ${isAnswered ? 'مُجاب' : 'غير مُجاب'}`;
+
+    btn.addEventListener("click", () => {
+      setFocusedIndex(originalIdx);
+    });
+
+    list.appendChild(btn);
+  });
+
+  // Ensure active button is in view if list is scrollable on small screens
+  const activeBtn = list.querySelector(".pagination-item-btn.active");
+  if (activeBtn) {
+    activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
   }
 }
 
@@ -387,7 +570,23 @@ function renderAccordionCards() {
   const container = document.getElementById("accordion-container");
   if (!container) return;
 
-  QUESTIONS.forEach((q, idx) => {
+  const filtered = getFilteredQuestions();
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty-filter-state">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-filter-x"><path d="M13.013 3H21v2l-7.381 7.381a1 1 0 0 0-.262.535l-.757 3.533-3.411-3.411M3 3l18 18M9 3h1.243a1 1 0 0 1 .707.293L13.01 5.36M9 9.172 4.381 4.552A1 1 0 0 0 3 5v2l6 6v6l3 3v-7"/></svg>
+        <h3>لا توجد أسئلة تطابق التصفية الحالية</h3>
+        <p>جرب اختيار تصنيف تصفية آخر أو عرض جميع الأسئلة للحل والتقييم.</p>
+        <button class="btn btn-primary" onclick="setFilter('all')">عرض جميع الأسئلة</button>
+      </div>
+    `;
+    return;
+  }
+
+  filtered.forEach((q) => {
+    const originalIdx = QUESTIONS.findIndex(item => item.id === q.id);
+    const originalNum = originalIdx + 1;
+
     const isExpanded = !!state.expandedCards[q.id];
     const isAnswered = !!state.answers[q.id] && state.answers[q.id].trim().length > 0;
     const isShown = !!state.shownAnswers[q.id];
@@ -433,11 +632,40 @@ function renderAccordionCards() {
 
     const questionSnippet = q.question.substring(0, 45).replace(/\n/g, " ") + (q.question.length > 45 ? "..." : "");
 
+    // Structured Quran and Poetry content rendering
+    let quranHTML = "";
+    if (q.quranVerse) {
+      quranHTML = `
+        <div class="quran-container">
+          <div class="quran-verse" dir="rtl" lang="ar">${q.quranVerse}</div>
+        </div>
+      `;
+    }
+
+    let poetryHTML = "";
+    if (q.poetry) {
+      if (q.poetry.layout === "two-halves") {
+        poetryHTML = `
+          <div class="poetry-verse poetry-two-halves" dir="rtl" lang="ar">
+            <span class="poetry-hemistich poetry-sadr">${q.poetry.sadr}</span>
+            <span class="poetry-separator">—</span>
+            <span class="poetry-hemistich poetry-ajuz">${q.poetry.ajuz}</span>
+          </div>
+        `;
+      } else if (q.poetry.layout === "two-lines") {
+        poetryHTML = `
+          <div class="poetry-verse" dir="rtl" lang="ar">
+            ${q.poetry.lines.map(line => `<div class="poetry-line">${line}</div>`).join('')}
+          </div>
+        `;
+      }
+    }
+
     // Accordion Card DOM layout
     card.innerHTML = `
-      <div class="card-header" onclick="toggleCardCollapse('${q.id}', ${idx})">
+      <div class="card-header" onclick="toggleCardCollapse('${q.id}', ${originalIdx})">
         <div class="card-header-left">
-          <span class="question-num-badge">${idx + 1}</span>
+          <span class="question-num-badge">${originalNum}</span>
           <span class="question-preview-text">${questionSnippet}</span>
         </div>
         <div class="card-header-right">
@@ -454,13 +682,10 @@ function renderAccordionCards() {
           ${q.years ? `<span class="year-badge">${q.years}</span>` : ''}
         </div>
 
-        <h3 class="question-text">${q.question}</h3>
+        ${quranHTML}
+        ${poetryHTML}
 
-        ${q.quranVerse ? `
-          <div class="quran-container">
-            <div class="quran-verse">${q.quranVerse}</div>
-          </div>
-        ` : ''}
+        <h3 class="question-text">${q.question}</h3>
 
         <div class="answer-input-container">
           <label class="answer-label" for="textarea-${q.id}">إجابتك الشخصية يا بطل:</label>
@@ -495,33 +720,58 @@ function renderAccordionCards() {
 
         <!-- Hidden Self-Assessment Section -->
         <div class="evaluation-section" id="eval-${q.id}" style="${isShown ? 'display:block;' : 'display:none;'}">
-          <h4 class="eval-title">قيّم جوابك يا بطل</h4>
-          <p class="eval-subtitle">اختر الدرجة التي تراها مناسبة بعد مقارنة جوابك بالجواب النموذجي المطبوع في المصدر:</p>
+          <h4 class="eval-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-award"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+            ميزان التقييم الذاتي الأكاديمي (0 - 10 درجات)
+          </h4>
+          <p class="eval-subtitle">قارن إجابتك بالحل النموذجي أعلاه بدقة، ثم اختر الدرجة التي تستحقها على هذا التدريج الأكاديمي:</p>
           
-          <div class="eval-buttons">
-            <button 
-              class="btn-eval ${state.ratings[q.id] === 0 ? 'selected-0' : ''}" 
-              onclick="rateQuestion('${q.id}', 0)"
-            >
-              0 درجة
-            </button>
-            <button 
-              class="btn-eval ${state.ratings[q.id] === 5 ? 'selected-5' : ''}" 
-              onclick="rateQuestion('${q.id}', 5)"
-            >
-              5 درجات
-            </button>
-            <button 
-              class="btn-eval ${state.ratings[q.id] === 10 ? 'selected-10' : ''}" 
-              onclick="rateQuestion('${q.id}', 10)"
-            >
-              10 درجات
-            </button>
+          <div class="academic-slider-wrapper">
+            <div class="academic-badge-container">
+              <span class="academic-score-title">التقدير الأكاديمي:</span>
+              <div class="academic-score-badge" id="score-badge-${q.id}">
+                ${state.ratings[q.id] !== undefined ? `${state.ratings[q.id]} / 10 — ${getAcademicLabel(state.ratings[q.id])}` : 'يرجى اختيار درجة التقييم'}
+              </div>
+            </div>
+
+            <div class="academic-slider-container">
+              <!-- Active progress fill line -->
+              <div class="academic-slider-track">
+                <div class="academic-slider-fill" id="slider-fill-${q.id}" style="width: ${state.ratings[q.id] !== undefined ? (state.ratings[q.id] * 10) : 0}%;"></div>
+              </div>
+
+              <!-- Clickable step nodes 0 to 10 -->
+              <div class="academic-slider-steps">
+                ${Array.from({length: 11}).map((_, i) => {
+                  const isSelected = state.ratings[q.id] === i;
+                  // Left position is percentage from 0 to 100
+                  const leftPos = i * 10;
+                  return `
+                    <button 
+                      class="step-node ${isSelected ? 'selected' : ''}" 
+                      style="left: ${leftPos}%;" 
+                      onclick="rateQuestion('${q.id}', ${i})"
+                      title="تقييم بـ ${i} درجات"
+                    >
+                      <span class="step-dot"></span>
+                      <span class="step-number">${i}</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Descriptive milestones -->
+            <div class="academic-milestones">
+              <span class="milestone milestone-low">تأسيس وتركيز مكثف (0-2)</span>
+              <span class="milestone milestone-mid">مقبول إلى جيد (3-6)</span>
+              <span class="milestone milestone-high">ممتاز ومتمكن (7-10)</span>
+            </div>
           </div>
 
           <!-- Mastery Section -->
           <div class="mastery-section">
-            <h4 class="mastery-title">مستوى تمكنك من هذا السؤال:</h4>
+            <h4 class="mastery-title">تصنيف مستوى تمكنك من مهارة السؤال:</h4>
             <div class="mastery-buttons">
               <button 
                 class="btn-mastery ${state.mastery[q.id] === 'high' ? 'selected-high' : ''}" 
@@ -560,8 +810,46 @@ function renderAccordionCards() {
         state.answers[q.id] = val;
         saveState();
 
+        const hasText = val.trim().length > 0;
+
+        // Dynamic update of top nav dot
+        const dot = document.querySelector(`.nav-dot[data-q-id="${q.id}"]`);
+        if (dot) {
+          if (hasText) {
+            dot.classList.add("answered");
+          } else {
+            dot.classList.remove("answered");
+          }
+        }
+
+        // Dynamic update of bottom pagination button
+        const pBtn = document.querySelector(`.pagination-item-btn[data-q-id="${q.id}"]`);
+        if (pBtn) {
+          if (hasText) {
+            pBtn.classList.add("answered");
+            pBtn.classList.remove("unanswered");
+            if (!pBtn.querySelector(".check-icon") && !pBtn.querySelector(".answered-badge")) {
+              const dotIcon = pBtn.querySelector(".unanswered-badge");
+              if (dotIcon) {
+                dotIcon.outerHTML = `
+                  <span class="status-indicator-badge answered-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+                  </span>
+                `;
+              }
+            }
+          } else {
+            pBtn.classList.remove("answered");
+            pBtn.classList.add("unanswered");
+            const checkIcon = pBtn.querySelector(".answered-badge");
+            if (checkIcon) {
+              checkIcon.outerHTML = `<span class="status-indicator-badge unanswered-badge"></span>`;
+            }
+          }
+        }
+
         // Enable or disable show model answer button
-        if (val.trim().length > 0 && !state.shownAnswers[q.id]) {
+        if (hasText && !state.shownAnswers[q.id]) {
           btnShow.disabled = false;
         } else {
           btnShow.disabled = true;
@@ -602,11 +890,26 @@ window.toggleCardCollapse = function(qId, idx) {
   const rail = document.getElementById("nav-rail");
   if (rail) {
     const dots = rail.querySelectorAll(".nav-dot");
-    dots.forEach((dot, dotIdx) => {
-      if (dotIdx === idx) {
+    dots.forEach((dot) => {
+      if (dot.dataset.qId === qId && !wasExpanded) {
         dot.classList.add("active");
+        dot.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       } else {
         dot.classList.remove("active");
+      }
+    });
+  }
+
+  // Re-render bottom pagination highlights
+  const pList = document.getElementById("bottom-pagination-list");
+  if (pList) {
+    const pBtns = pList.querySelectorAll(".pagination-item-btn");
+    pBtns.forEach((btn) => {
+      if (btn.dataset.qId === qId && !wasExpanded) {
+        btn.classList.add("active");
+        btn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      } else {
+        btn.classList.remove("active");
       }
     });
   }
@@ -651,22 +954,39 @@ window.revealModelAnswer = function(qId) {
   renderPracticeScreenProgressOnly();
 };
 
-// Rate Question (0, 5, 10 marks)
+// Rate Question (0 to 10 marks on the premium academic slider)
 window.rateQuestion = function(qId, score) {
   state.ratings[qId] = score;
   saveState();
 
-  // Re-highlight evaluated buttons
+  // Re-highlight evaluated interactive elements
   const evalSec = document.getElementById(`eval-${qId}`);
   if (evalSec) {
-    const btns = evalSec.querySelectorAll(".btn-eval");
-    btns.forEach(btn => {
-      btn.className = "btn-eval"; // clear
-      const btnScore = parseInt(btn.textContent.trim());
-      if (btnScore === score) {
-        btn.classList.add(`selected-${score}`);
+    // 1. Highlight selected node and clear others
+    const nodes = evalSec.querySelectorAll(".step-node");
+    nodes.forEach((node, i) => {
+      if (i === score) {
+        node.classList.add("selected");
+      } else {
+        node.classList.remove("selected");
       }
     });
+
+    // 2. Adjust slider active track fill
+    const fill = document.getElementById(`slider-fill-${qId}`);
+    if (fill) {
+      fill.style.width = `${score * 10}%`;
+    }
+
+    // 3. Update dynamic academic descriptor badge
+    const badge = document.getElementById(`score-badge-${qId}`);
+    if (badge) {
+      badge.textContent = `${score} / 10 — ${getAcademicLabel(score)}`;
+      // Add a brief subtle pulse animation for pleasant interaction feedback
+      badge.classList.remove("badge-pulse");
+      void badge.offsetWidth; // Force CSS reflow
+      badge.classList.add("badge-pulse");
+    }
   }
 
   // Update header badge
