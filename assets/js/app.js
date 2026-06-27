@@ -1100,6 +1100,131 @@ function renderPracticeScreenProgressOnly() {
   }
 }
 
+// Function to generate interactive Recharts-style mastery chart SVG
+function generateMasteryChartSVG(high, mid, low) {
+  const maxVal = Math.max(high, mid, low, 4);
+  const scaleVal = 140 / maxVal;
+  
+  const hHigh = high * scaleVal;
+  const hMid = mid * scaleVal;
+  const hLow = low * scaleVal;
+  
+  const yHigh = 190 - hHigh;
+  const yMid = 190 - hMid;
+  const yLow = 190 - hLow;
+
+  const yTicks = [
+    { y: 190, val: 0 },
+    { y: 143, val: Math.round(maxVal * 0.33) },
+    { y: 96, val: Math.round(maxVal * 0.67) },
+    { y: 50, val: maxVal }
+  ];
+
+  return `
+    <div class="recharts-wrapper" style="direction: ltr; position: relative; width: 100%; max-width: 480px; margin: 1.5rem auto; padding: 1.25rem; background: var(--color-card-bg); border: 2px solid var(--color-border); border-radius: 20px; box-shadow: var(--shadow-md);">
+      <h4 style="text-align: right; font-family: var(--font-sans); font-size: 1rem; font-weight: 800; color: var(--color-text-main); margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; direction: rtl;">
+        <span>📊 توزيع مستويات التمكن الأكاديمي</span>
+        <span style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: normal;">(تقييم تفاعلي)</span>
+      </h4>
+      
+      <svg viewBox="0 0 450 250" width="100%" height="100%" style="overflow: visible;">
+        <defs>
+          <linearGradient id="colorHigh" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stop-color="#10B981" stop-opacity="0.9"/>
+            <stop offset="95%" stop-color="#047857" stop-opacity="0.9"/>
+          </linearGradient>
+          <linearGradient id="colorMid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stop-color="#F59E0B" stop-opacity="0.9"/>
+            <stop offset="95%" stop-color="#B45309" stop-opacity="0.9"/>
+          </linearGradient>
+          <linearGradient id="colorLow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stop-color="#EF4444" stop-opacity="0.9"/>
+            <stop offset="95%" stop-color="#B91C1C" stop-opacity="0.9"/>
+          </linearGradient>
+          <filter id="shadow-glow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#5B2596" flood-opacity="0.1"/>
+          </filter>
+        </defs>
+
+        <!-- Y-Axis Grid Lines -->
+        ${yTicks.map(tick => `
+          <line x1="50" y1="${tick.y}" x2="400" y2="${tick.y}" stroke="var(--color-border)" stroke-dasharray="3 3" opacity="0.5" />
+          <text x="35" y="${tick.y + 4}" fill="var(--color-text-muted)" font-family="var(--font-sans)" font-size="11" text-anchor="end" font-weight="600">${tick.val}</text>
+        `).join("")}
+
+        <!-- X-Axis Line -->
+        <line x1="50" y1="190" x2="400" y2="190" stroke="var(--color-border)" stroke-width="1.5" />
+
+        <!-- High Mastery Bar Group -->
+        <g class="chart-bar-group" style="cursor: pointer;">
+          <rect class="chart-bar" x="90" y="${yHigh}" width="45" height="${hHigh || 2}" rx="6" ry="6" fill="url(#colorHigh)" filter="url(#shadow-glow)" style="transition: all 0.5s ease-out;">
+            <animate attributeName="height" from="0" to="${hHigh || 2}" dur="0.8s" fill="freeze" />
+            <animate attributeName="y" from="190" to="${yHigh}" dur="0.8s" fill="freeze" />
+          </rect>
+          <!-- Text Value on top of the bar -->
+          <text x="112.5" y="${yHigh - 8}" fill="#10B981" font-family="var(--font-sans)" font-size="12" font-weight="800" text-anchor="middle">${high}</text>
+          <!-- Tooltip -->
+          <g class="chart-tooltip" style="pointer-events: none;">
+            <rect x="72.5" y="${yHigh - 45}" width="80" height="30" rx="6" fill="var(--madrasati-dark-ink)" opacity="0.95" />
+            <text x="112.5" y="${yHigh - 26}" fill="white" font-family="var(--font-sans)" font-size="11" font-weight="bold" text-anchor="middle">متمكن: ${high}</text>
+          </g>
+        </g>
+
+        <!-- Mid Mastery Bar Group -->
+        <g class="chart-bar-group" style="cursor: pointer;">
+          <rect class="chart-bar" x="202.5" y="${yMid}" width="45" height="${hMid || 2}" rx="6" ry="6" fill="url(#colorMid)" filter="url(#shadow-glow)" style="transition: all 0.5s ease-out;">
+            <animate attributeName="height" from="0" to="${hMid || 2}" dur="0.8s" fill="freeze" />
+            <animate attributeName="y" from="190" to="${yMid}" dur="0.8s" fill="freeze" />
+          </rect>
+          <!-- Text Value on top of the bar -->
+          <text x="225" y="${yMid - 8}" fill="#F59E0B" font-family="var(--font-sans)" font-size="12" font-weight="800" text-anchor="middle">${mid}</text>
+          <!-- Tooltip -->
+          <g class="chart-tooltip" style="pointer-events: none;">
+            <rect x="180" y="${yMid - 45}" width="90" height="30" rx="6" fill="var(--madrasati-dark-ink)" opacity="0.95" />
+            <text x="225" y="${yMid - 26}" fill="white" font-family="var(--font-sans)" font-size="10" font-weight="bold" text-anchor="middle">مراجعة: ${mid}</text>
+          </g>
+        </g>
+
+        <!-- Low Mastery Bar Group -->
+        <g class="chart-bar-group" style="cursor: pointer;">
+          <rect class="chart-bar" x="315" y="${yLow}" width="45" height="${hLow || 2}" rx="6" ry="6" fill="url(#colorLow)" filter="url(#shadow-glow)" style="transition: all 0.5s ease-out;">
+            <animate attributeName="height" from="0" to="${hLow || 2}" dur="0.8s" fill="freeze" />
+            <animate attributeName="y" from="190" to="${yLow}" dur="0.8s" fill="freeze" />
+          </rect>
+          <!-- Text Value on top of the bar -->
+          <text x="337.5" y="${yLow - 8}" fill="#EF4444" font-family="var(--font-sans)" font-size="12" font-weight="800" text-anchor="middle">${low}</text>
+          <!-- Tooltip -->
+          <g class="chart-tooltip" style="pointer-events: none;">
+            <rect x="292.5" y="${yLow - 45}" width="90" height="30" rx="6" fill="var(--madrasati-dark-ink)" opacity="0.95" />
+            <text x="337.5" y="${yLow - 26}" fill="white" font-family="var(--font-sans)" font-size="10" font-weight="bold" text-anchor="middle">غير متمكن: ${low}</text>
+          </g>
+        </g>
+
+        <!-- X-Axis Labels -->
+        <text x="112.5" y="212" fill="var(--color-text-main)" font-family="var(--font-sans)" font-size="11" font-weight="bold" text-anchor="middle">متمكن</text>
+        <text x="225" y="212" fill="var(--color-text-main)" font-family="var(--font-sans)" font-size="11" font-weight="bold" text-anchor="middle">يحتاج مراجعة</text>
+        <text x="337.5" y="212" fill="var(--color-text-main)" font-family="var(--font-sans)" font-size="11" font-weight="bold" text-anchor="middle">غير متمكن</text>
+      </svg>
+
+      <!-- Legend (Recharts Style) -->
+      <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; font-family: var(--font-sans); font-size: 0.8rem; direction: rtl; font-weight: 700;">
+        <span style="display: flex; align-items: center; gap: 0.25rem;">
+          <span style="width: 10px; height: 10px; border-radius: 2px; background: linear-gradient(#10B981, #047857); display: inline-block;"></span>
+          متمكن
+        </span>
+        <span style="display: flex; align-items: center; gap: 0.25rem;">
+          <span style="width: 10px; height: 10px; border-radius: 2px; background: linear-gradient(#F59E0B, #B45309); display: inline-block;"></span>
+          أحتاج مراجعة
+        </span>
+        <span style="display: flex; align-items: center; gap: 0.25rem;">
+          <span style="width: 10px; height: 10px; border-radius: 2px; background: linear-gradient(#EF4444, #B91C1C); display: inline-block;"></span>
+          غير متمكن
+        </span>
+      </div>
+    </div>
+  `;
+}
+
 // 3. Results Screen Layout
 function renderResultsScreen(container) {
   const totalQuestions = QUESTIONS.length;
@@ -1143,6 +1268,53 @@ function renderResultsScreen(container) {
     }
   });
 
+  // Calculate Badge Tier
+  let badgeHTML = "";
+  if (answeredCount === totalQuestions) {
+    let badgeImg = "";
+    let badgeTitle = "";
+    let badgeColorClass = "";
+    let badgeDesc = "";
+
+    if (percentage >= 90) {
+      badgeImg = "/images/badge_gold.jpg";
+      badgeTitle = "وسام التميز الأكاديمي الذهبي";
+      badgeColorClass = "badge-gold";
+      badgeDesc = "ألف مبروك! لقد أتممت حل جميع الأسئلة وحققت مستوى تمكن استثنائي باهر (90% فما فوق). أنت بطل حقيقي وقائد متميز في قواعد اللغة العربية!";
+    } else if (percentage >= 70) {
+      badgeImg = "/images/badge_silver.jpg";
+      badgeTitle = "وسام الإبداع اللغوي الفضي";
+      badgeColorClass = "badge-silver";
+      badgeDesc = "أداء ممتاز جداً! أتممت حل جميع الأسئلة بمهارة عالية ودقة ممتازة (70% - 89%). واصل هذا التميز اللغوي الرائع لتعتلي الصدارة دائماً!";
+    } else {
+      badgeImg = "/images/badge_bronze.jpg";
+      badgeTitle = "وسام المثابرة والاجتهاد البرونزي";
+      badgeColorClass = "badge-bronze";
+      badgeDesc = "أحسنت صنعاً! لقد أثبتّ التزامك التام وحللت جميع أسئلة الوحدة بجد واجتهاد. استمر في المراجعة والتدرب لتطوير نقاط تمكنك وستصل للذهبي قريباً!";
+    }
+
+    badgeHTML = `
+      <div class="achievement-badge-card ${badgeColorClass}">
+        <div class="badge-ribbon">وسام الإنجاز والتمكن</div>
+        <div class="badge-image-container">
+          <img src="${badgeImg}" alt="${badgeTitle}" class="badge-glowing-image" referrerPolicy="no-referrer">
+        </div>
+        <h3 class="badge-card-title">${badgeTitle}</h3>
+        <p class="badge-card-desc">${badgeDesc}</p>
+      </div>
+    `;
+  } else {
+    badgeHTML = `
+      <div class="achievement-badge-card badge-locked">
+        <div class="badge-image-container">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lock" style="color: var(--color-text-muted);"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h3 class="badge-card-title">أوسمة التمكن مغلقة</h3>
+        <p class="badge-card-desc">أكمل حل جميع الأسئلة (${answeredCount} من أصل ${totalQuestions}) لتفتح وسام التمكن والتميز وتزين به سجل إنجازاتك في اللغة العربية!</p>
+      </div>
+    `;
+  }
+
   const resultsHTML = `
     <div class="results-screen">
       <h2 class="results-title">تقرير الأداء والتقييم الذاتي</h2>
@@ -1153,6 +1325,10 @@ function renderResultsScreen(container) {
           <span class="score-label">النسبة المئوية: ${percentage}%</span>
         </div>
       </div>
+
+      ${badgeHTML}
+
+      ${generateMasteryChartSVG(masteryHigh, masteryMid, masteryLow)}
 
       <div class="results-grid">
         <div class="stat-item">
@@ -1268,10 +1444,26 @@ function exportSummaryText() {
     else if (m === "low") masteryLow++;
   });
 
+  // Calculate earned badge for text export
+  let earnedBadgeStr = "أكمل جميع الأسئلة لتفتح وسام التمكن والتميز!";
+  if (answeredCount === totalQuestions) {
+    if (percentage >= 90) {
+      earnedBadgeStr = "🥇 وسام التميز الأكاديمي الذهبي (تم الحصول عليه!)";
+    } else if (percentage >= 70) {
+      earnedBadgeStr = "🥈 وسام الإبداع اللغوي الفضي (تم الحصول عليه!)";
+    } else {
+      earnedBadgeStr = "🥉 وسام المثابرة والاجتهاد البرونزي (تم الحصول عليه!)";
+    }
+  }
+
   let text = `=========================================
 ملخص الأداء الأكاديمي - تطبيق مدرستي (اللغة العربية)
 =========================================
 التاريخ: ${new Date().toLocaleString('ar-EG', { hour12: true })}
+
+وسام التميز:
+------------------
+* ${earnedBadgeStr}
 
 إحصائيات عامة:
 ------------------

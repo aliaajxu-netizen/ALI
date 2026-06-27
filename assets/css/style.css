@@ -1779,3 +1779,218 @@ body {
     font-size: 1.4rem;
   }
 }
+
+/* ==========================================================================
+   Achievement Badge Styles
+   ========================================================================== */
+.achievement-badge-card {
+  position: relative;
+  background-color: var(--color-card-bg);
+  border: 2px solid var(--color-border);
+  border-radius: 24px;
+  padding: 3rem 1.5rem 2rem;
+  text-align: center;
+  max-width: 520px;
+  margin: 2.5rem auto 1.5rem;
+  box-shadow: var(--shadow-lg);
+  transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.achievement-badge-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Badge Tier Styles */
+.achievement-badge-card.badge-gold {
+  border-color: #EAB308;
+  background: radial-gradient(circle at top, rgba(234, 179, 8, 0.04) 0%, var(--color-card-bg) 70%);
+  box-shadow: 0 10px 30px rgba(234, 179, 8, 0.15), var(--shadow-lg);
+}
+.achievement-badge-card.badge-gold .badge-ribbon {
+  background: linear-gradient(135deg, #EAB308 0%, #CA8A04 100%);
+  color: #0F0B1E;
+}
+
+.achievement-badge-card.badge-silver {
+  border-color: #94A3B8;
+  background: radial-gradient(circle at top, rgba(148, 163, 184, 0.04) 0%, var(--color-card-bg) 70%);
+  box-shadow: 0 10px 30px rgba(148, 163, 184, 0.15), var(--shadow-lg);
+}
+.achievement-badge-card.badge-silver .badge-ribbon {
+  background: linear-gradient(135deg, #94A3B8 0%, #64748B 100%);
+  color: white;
+}
+
+.achievement-badge-card.badge-bronze {
+  border-color: #CD7F32;
+  background: radial-gradient(circle at top, rgba(205, 127, 50, 0.04) 0%, var(--color-card-bg) 70%);
+  box-shadow: 0 10px 30px rgba(205, 127, 50, 0.15), var(--shadow-lg);
+}
+.achievement-badge-card.badge-bronze .badge-ribbon {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+  color: white;
+}
+
+.achievement-badge-card.badge-locked {
+  border-style: dashed;
+  opacity: 0.8;
+  background-color: rgba(104, 112, 132, 0.02);
+}
+.achievement-badge-card.badge-locked .badge-image-container {
+  background: var(--madrasati-soft-lavender);
+  color: var(--madrasati-soft-gray);
+  border: 3px dashed var(--madrasati-border);
+}
+
+/* Ribbon badge on top */
+.badge-ribbon {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 800;
+  border-radius: 50px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  letter-spacing: 0.5px;
+}
+
+/* Badge Image and Glow */
+.badge-image-container {
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 1.5rem;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent-bg);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.badge-gold .badge-image-container::before {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(234, 179, 8, 0.25) 0%, transparent 70%);
+  z-index: 0;
+  animation: badge-pulse 3s infinite ease-in-out;
+}
+.badge-silver .badge-image-container::before {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(148, 163, 184, 0.25) 0%, transparent 70%);
+  z-index: 0;
+  animation: badge-pulse 3s infinite ease-in-out;
+}
+.badge-bronze .badge-image-container::before {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(205, 127, 50, 0.25) 0%, transparent 70%);
+  z-index: 0;
+  animation: badge-pulse 3s infinite ease-in-out;
+}
+
+.badge-glowing-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  z-index: 1;
+  border: 4px solid var(--color-card-bg);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.achievement-badge-card:hover .badge-glowing-image {
+  transform: scale(1.08) rotate(5deg);
+}
+
+.badge-card-title {
+  font-family: var(--font-sans);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-text-main);
+  margin-bottom: 0.5rem;
+}
+
+.badge-card-desc {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .achievement-badge-card {
+    padding: 2.5rem 1.25rem 1.5rem;
+    margin: 2rem auto 1rem;
+  }
+  .badge-image-container {
+    width: 130px;
+    height: 130px;
+  }
+  .badge-gold .badge-image-container::before,
+  .badge-silver .badge-image-container::before,
+  .badge-bronze .badge-image-container::before {
+    width: 150px;
+    height: 150px;
+  }
+  .badge-card-title {
+    font-size: 1.15rem;
+  }
+  .badge-card-desc {
+    font-size: 0.85rem;
+  }
+}
+
+/* ==========================================================================
+   Recharts-Style Interactive Chart Animations and Hover States
+   ========================================================================== */
+.chart-bar-group {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chart-bar-group:hover {
+  transform: translateY(-4px);
+}
+
+.chart-bar-group:hover .chart-bar {
+  filter: brightness(1.1) drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+
+.chart-bar-group .chart-tooltip {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chart-bar-group:hover .chart-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
