@@ -218,7 +218,7 @@ function renderHomeScreen(container) {
           </li>
           <li>
             <span class="home-steps-num">٣</span>
-            <span>قيّم جوابك يا بطل بموضوعية واختر الدرجة المناسبة (0 أو 5 أو 10).</span>
+            <span>قيّم جوابك يا بطل بموضوعية واختر الدرجة المناسبة من (0 إلى 10).</span>
           </li>
           <li>
             <span class="home-steps-num">٤</span>
