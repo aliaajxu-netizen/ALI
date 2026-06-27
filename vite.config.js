@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig(() => {
   return {
+    base: './',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
