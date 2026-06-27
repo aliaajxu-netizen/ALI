@@ -5,6 +5,22 @@
 
 const STORAGE_KEY = "madrasati-arabic-unit-one-lesson-one-v1";
 
+// Function to get the correct base path for assets dynamically (supports GitHub Pages, local files, previews, etc.)
+function getAssetPath(relativePath) {
+  const href = window.location.href;
+  const cleanUrl = href.split('?')[0].split('#')[0];
+  
+  let baseDir = cleanUrl;
+  if (!cleanUrl.endsWith('/')) {
+    if (cleanUrl.match(/\.[a-zA-Z0-9]+$/)) {
+      baseDir = cleanUrl.substring(0, cleanUrl.lastIndexOf('/') + 1);
+    } else {
+      baseDir = cleanUrl + '/';
+    }
+  }
+  return `${baseDir}${relativePath}`;
+}
+
 const QUESTIONS = window.QUESTIONS;
 
 // Initial state structure
@@ -57,6 +73,21 @@ function saveState() {
 document.addEventListener("DOMContentLoaded", () => {
   loadState();
   applyTheme();
+
+  // Set navbar logo dynamically with robust fallback handling
+  const navLogo = document.getElementById("nav-logo");
+  if (navLogo) {
+    navLogo.src = getAssetPath("brand/madrasati-logo.jpg");
+    navLogo.onerror = function() {
+      if (this.src.indexOf(".png") === -1) {
+        this.src = getAssetPath("brand/madrasati-logo.png");
+      } else {
+        this.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="100%" height="100%" fill="%235B2596"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10" font-weight="bold">مدرسي</text></svg>';
+        this.onerror = null;
+      }
+    };
+  }
+
   renderApp();
   setupGlobalEvents();
 });
@@ -200,7 +231,7 @@ function renderHomeScreen(container) {
   const homeHTML = `
     <div class="home-screen" id="home-screen">
       <div class="home-logo-container">
-        <img class="home-logo" src="brand/madrasati-logo.png" alt="منصة مدرسي" onerror="if (this.src.indexOf('.jpg') === -1) { this.src='brand/madrasati-logo.jpg'; } else { this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22 viewBox=%220 0 140 140%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%235B2596%22/><text x=%2250%25%22 y=%2255%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-size=%2224%22 font-weight=%22bold%22>مدرسي</text></svg>'; }">
+        <img class="home-logo" alt="منصة مدرسي">
       </div>
       <h1 class="home-title">منصة مدرسي</h1>
       <p class="home-subtitle">الأسئلة الوزارية حول الاستفهام التصديقي والتصوري لقواعد اللغة العربية للصف السادس الإعدادي</p>
@@ -253,6 +284,20 @@ function renderHomeScreen(container) {
   `;
 
   container.innerHTML = homeHTML;
+
+  // Set home logo dynamically with robust fallback handling
+  const homeLogo = container.querySelector(".home-logo");
+  if (homeLogo) {
+    homeLogo.src = getAssetPath("brand/madrasati-logo.jpg");
+    homeLogo.onerror = function() {
+      if (this.src.indexOf(".png") === -1) {
+        this.src = getAssetPath("brand/madrasati-logo.png");
+      } else {
+        this.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140"><rect width="100%" height="100%" fill="%235B2596"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-family="sans-serif" font-size="24" font-weight="bold">مدرسي</text></svg>';
+        this.onerror = null;
+      }
+    };
+  }
 
   // Event Listeners for actions
   const btnStart = document.getElementById("btn-start");
